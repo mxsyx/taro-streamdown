@@ -5,6 +5,7 @@ import type { ComponentType, ReactNode } from "react";
 import { memo, useMemo } from "react";
 import {
   type InlineNode,
+  type ListBlock,
   type MarkdownBlock,
   parseMarkdown,
   type TableAlignment,
@@ -12,6 +13,7 @@ import {
 
 export type {
   InlineNode,
+  ListBlock,
   MarkdownBlock,
   TableAlignment,
   TableBlock,
@@ -25,6 +27,9 @@ type TaroComponent = ComponentType<Record<string, unknown>> | string;
 export interface TaroMarkdownComponents {
   emphasis?: TaroComponent;
   inlineCode?: TaroComponent;
+  list?: TaroComponent;
+  listItem?: TaroComponent;
+  listItemContent?: TaroComponent;
   paragraph?: TaroComponent;
   root?: TaroComponent;
   strong?: TaroComponent;
@@ -50,7 +55,6 @@ export interface StreamdownProps {
 
 const defaultView = "view";
 const defaultText = "text";
-const defaultScrollView = "scroll-view";
 
 const rootClassName = "taro-streamdown-root w-full";
 const paragraphClassName = "taro-streamdown-paragraph mb-2";
@@ -67,13 +71,19 @@ const strongClassName = "taro-streamdown-strong font-semibold";
 const emphasisClassName = "taro-streamdown-emphasis italic";
 const inlineCodeClassName =
   "taro-streamdown-inline-code rounded px-1 font-mono";
+const listClassName = "taro-streamdown-list mb-2";
+const listItemClassName = "taro-streamdown-list-item flex flex-row py-1";
+const listItemContentClassName = "taro-streamdown-list-item-content flex-1";
+const listMarkerClassName = "taro-streamdown-list-marker mr-2";
+const orderedListClassName = "taro-streamdown-ordered-list";
+const unorderedListClassName = "taro-streamdown-unordered-list";
 const tableContainerClassName = "taro-streamdown-table-container mb-2 w-full";
-const tableClassName = "taro-streamdown-table min-w-full";
+const tableClassName = "taro-streamdown-table w-full border-b border-gray-300";
 const tableHeaderRowClassName =
   "taro-streamdown-table-header-row flex flex-row";
-const tableRowClassName = "taro-streamdown-table-row flex flex-row -mt-px";
+const tableRowClassName = "taro-streamdown-table-row flex flex-row";
 const tableCellBaseClassName =
-  "taro-streamdown-table-cell min-w-24 flex-1 border border-gray-300 px-2 py-1";
+  "taro-streamdown-table-cell box-border min-w-0 flex-1 border-l border-t border-gray-300 px-2 py-1";
 const tableHeaderCellClassName = `taro-streamdown-table-header-cell ${tableCellBaseClassName} font-semibold`;
 
 const cn = (...classes: Array<string | false | null | undefined>) =>
@@ -143,6 +153,10 @@ const renderBlock = (
     return renderTable(block, key, components, selectable);
   }
 
+  if (block.type === "list") {
+    return renderList(block, key, components, selectable);
+  }
+
   const Paragraph = components?.paragraph ?? defaultView;
   const blockClassName = block.headingLevel
     ? headingClassNames[block.headingLevel]
@@ -155,32 +169,65 @@ const renderBlock = (
   );
 };
 
+const renderList = (
+  block: ListBlock,
+  key: string,
+  components: TaroMarkdownComponents | undefined,
+  selectable: boolean
+): ReactNode => {
+  const List = components?.list ?? defaultView;
+  const ListItem = components?.listItem ?? defaultView;
+  const ListItemContent = components?.listItemContent ?? defaultView;
+
+  return (
+    <List
+      className={cn(
+        listClassName,
+        block.ordered ? orderedListClassName : unorderedListClassName
+      )}
+      key={key}
+    >
+      {block.items.map((item, index) => (
+        <ListItem
+          className={listItemClassName}
+          // biome-ignore lint/suspicious/noArrayIndexKey: markdown list items are positional and hold no local state
+          key={`li-${index}`}
+        >
+          {block.ordered ? (
+            <text className={listMarkerClassName}>
+              {`${(block.start ?? 1) + index}.`}
+            </text>
+          ) : null}
+          <ListItemContent className={listItemContentClassName}>
+            {renderInline(item, `${key}-li-${index}`, components, selectable)}
+          </ListItemContent>
+        </ListItem>
+      ))}
+    </List>
+  );
+};
+
 const renderTable = (
   block: Extract<MarkdownBlock, { type: "table" }>,
   key: string,
   components: TaroMarkdownComponents | undefined,
   selectable: boolean
 ): ReactNode => {
-  const TableContainer = components?.tableContainer ?? defaultScrollView;
+  const TableContainer = components?.tableContainer ?? defaultView;
   const Table = components?.table ?? defaultView;
   const TableRow = components?.tableRow ?? defaultView;
   const HeaderCell = components?.tableHeaderCell ?? defaultView;
   const Cell = components?.tableCell ?? defaultView;
 
   return (
-    <TableContainer
-      className={tableContainerClassName}
-      key={key}
-      scrollX
-      showScrollbar={false}
-    >
+    <TableContainer className={tableContainerClassName} key={key}>
       <Table className={tableClassName}>
         <TableRow className={tableHeaderRowClassName}>
           {block.header.map((cell, cellIndex) => (
             <HeaderCell
               className={cn(
                 tableHeaderCellClassName,
-                cellIndex > 0 && "-ml-px",
+                cellIndex === block.header.length - 1 && "border-r",
                 alignmentClassName(block.alignments[cellIndex])
               )}
               // biome-ignore lint/suspicious/noArrayIndexKey: markdown table columns are positional and hold no local state
@@ -205,7 +252,7 @@ const renderTable = (
               <Cell
                 className={cn(
                   tableCellBaseClassName,
-                  cellIndex > 0 && "-ml-px",
+                  cellIndex === row.length - 1 && "border-r",
                   alignmentClassName(block.alignments[cellIndex])
                 )}
                 // biome-ignore lint/suspicious/noArrayIndexKey: markdown table cells are positional and hold no local state

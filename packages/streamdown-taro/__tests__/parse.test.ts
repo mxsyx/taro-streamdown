@@ -30,6 +30,35 @@ describe("parseMarkdown", () => {
     ]);
   });
 
+  it("parses unordered lists", () => {
+    expect(parseMarkdown("- A\n- B\n- **C**")).toEqual([
+      {
+        type: "list",
+        ordered: false,
+        items: [
+          [{ type: "text", value: "A" }],
+          [{ type: "text", value: "B" }],
+          [{ type: "strong", children: [{ type: "text", value: "C" }] }],
+        ],
+      },
+    ]);
+  });
+
+  it("parses ordered lists", () => {
+    expect(parseMarkdown("1. A\n2. B\n3. **C**")).toEqual([
+      {
+        type: "list",
+        ordered: true,
+        start: 1,
+        items: [
+          [{ type: "text", value: "A" }],
+          [{ type: "text", value: "B" }],
+          [{ type: "strong", children: [{ type: "text", value: "C" }] }],
+        ],
+      },
+    ]);
+  });
+
   it("parses gfm-style tables", () => {
     expect(
       parseMarkdown(

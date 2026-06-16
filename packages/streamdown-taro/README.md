@@ -40,6 +40,14 @@ const markdown = `
 
 Plain text with **bold**, *emphasis*, and \`inline code\`.
 
+- A
+- B
+- C
+
+1. First
+2. Second
+3. Third
+
 | Name | Count |
 | :--- | ---: |
 | Apples | 3 |
@@ -61,6 +69,8 @@ import Streamdown from "taro-streamdown";
 
 - Paragraph text
 - ATX headings from `#` through `######`
+- Unordered lists with `-`, `*`, or `+` markers
+- Ordered lists with `1.`, `2.`, or `1)` markers
 - Inline `**strong**`, `*emphasis*`, and `` `inline code` ``
 - GFM-style tables with left, center, and right alignment
 - Escaped pipes inside table cells, for example `x\|y`
@@ -82,7 +92,7 @@ Headings use:
 | `###` | `text-xl font-semibold` |
 | `####` | `text-lg font-semibold` |
 | `#####` | `text-base font-semibold` |
-| `######` | `text-base font-semibold` |
+| `######` | `text-sm font-semibold` |
 
 Available override classes:
 
@@ -95,6 +105,12 @@ Available override classes:
 | Strong | `taro-streamdown-strong` |
 | Emphasis | `taro-streamdown-emphasis` |
 | Inline code | `taro-streamdown-inline-code` |
+| List | `taro-streamdown-list` |
+| Ordered list | `taro-streamdown-ordered-list` |
+| Unordered list | `taro-streamdown-unordered-list` |
+| List item | `taro-streamdown-list-item` |
+| List marker | `taro-streamdown-list-marker` |
+| List item content | `taro-streamdown-list-item-content` |
 | Table container | `taro-streamdown-table-container` |
 | Table | `taro-streamdown-table` |
 | Table header row | `taro-streamdown-table-header-row` |
@@ -115,8 +131,12 @@ Example override:
 }
 ```
 
-Table borders are visually collapsed by using `-mt-px` on body rows and `-ml-px`
-on non-first cells.
+Table borders are merged by drawing the left and top borders for each cell,
+drawing the right border on the last cell in each row, and drawing the bottom
+border on the table wrapper. Cells use `box-border` so the last-column right
+border stays inside the cell box in mini-program renderers. Tables use the full
+container width and cells can shrink and wrap instead of forcing horizontal
+scroll.
 
 ## Custom Components
 

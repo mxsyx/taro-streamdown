@@ -23,7 +23,14 @@ export interface TableBlock {
   type: "table";
 }
 
-export type MarkdownBlock = TextBlock | TableBlock;
+export interface ListBlock {
+  items: InlineNode[][];
+  ordered: boolean;
+  start?: number;
+  type: "list";
+}
+
+export type MarkdownBlock = ListBlock | TextBlock | TableBlock;
 
 const NEWLINE_PATTERN = /\r\n?/g;
 const INLINE_TOKEN_PATTERN =
@@ -32,6 +39,8 @@ const LEADING_PIPE_PATTERN = /^\|/;
 const TRAILING_PIPE_PATTERN = /\|$/;
 const TABLE_DELIMITER_PATTERN = /^:?-{3,}:?$/;
 const HEADING_PATTERN = /^(#{1,6})\s+(.+)$/;
+const UNORDERED_LIST_ITEM_PATTERN = /^\s*[-*+]\s+(.+)$/;
+const ORDERED_LIST_ITEM_PATTERN = /^\s*(\d+)[.)]\s+(.+)$/;
 const BLOCK_CACHE_LIMIT = 100;
 
 const blockCache = new Map<string, MarkdownBlock[]>();
@@ -59,6 +68,13 @@ export const parseMarkdown = (markdown = ""): MarkdownBlock[] => {
       continue;
     }
 
+    const list = parseList(lines, index);
+    if (list) {
+      blocks.push(list.block);
+      index = list.nextIndex;
+      continue;
+    }
+
     const text = parseTextBlock(lines, index);
     blocks.push(text.block);
     index = text.nextIndex;
@@ -73,6 +89,41 @@ export const parseMarkdown = (markdown = ""): MarkdownBlock[] => {
   blockCache.set(markdown, blocks);
 
   return blocks;
+};
+
+const parseList = (
+  lines: string[],
+  startIndex: number
+): { block: ListBlock; nextIndex: number } | null => {
+  const firstItem = parseListItem(lines[startIndex] ?? "");
+  if (!firstItem) {
+    return null;
+  }
+
+  const items: InlineNode[][] = [];
+  const ordered = firstItem.ordered;
+  const start = firstItem.index;
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const item = parseListItem(lines[index] ?? "");
+    if (!item || item.ordered !== ordered) {
+      break;
+    }
+
+    items.push(parseInline(item.value));
+    index += 1;
+  }
+
+  return {
+    block: {
+      type: "list",
+      items,
+      ordered,
+      start,
+    },
+    nextIndex: index,
+  };
 };
 
 const parseTextBlock = (
@@ -273,6 +324,27 @@ const parseHeading = (
     level: heading[1]?.length as 1 | 2 | 3 | 4 | 5 | 6,
     text: heading[2] ?? "",
   };
+};
+
+const parseListItem = (
+  line: string
+): { index?: number; ordered: boolean; value: string } | null => {
+  const orderedItem = line.match(ORDERED_LIST_ITEM_PATTERN);
+  if (orderedItem) {
+    return {
+      index: Number(orderedItem[1]),
+      ordered: true,
+      value: orderedItem[2] ?? "",
+    };
+  }
+
+  const unorderedItem = line.match(UNORDERED_LIST_ITEM_PATTERN);
+  return unorderedItem
+    ? {
+        ordered: false,
+        value: unorderedItem[1] ?? "",
+      }
+    : null;
 };
 
 const unescapeText = (value: string): string =>
