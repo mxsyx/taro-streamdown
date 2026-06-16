@@ -1,0 +1,42 @@
+{
+  "name": "taro-streamdown",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:coverage": "vitest --coverage run"
+  },
+  "peerDependencies": {
+    "@tarojs/components": "^3.0.0 || ^4.0.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@tarojs/components": "^4.2.0",
+    "@types/react": "^19.2.7",
+    "@vitest/coverage-v8": "^4.0.15",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  },
+  "author": "Hayden Bleasel <hayden.bleasel@vercel.com>",
+  "license": "Apache-2.0",
+  "description": "Taro-compatible Markdown renderer for Streamdown text and tables",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vercel/streamdown.git",
+    "directory": "packages/streamdown-taro"
+  }
+}
