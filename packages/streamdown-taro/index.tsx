@@ -1,6 +1,6 @@
 "use client";
 
-import type { ScrollViewProps, TextProps, ViewProps } from "@tarojs/components";
+import type { ViewProps } from "@tarojs/components";
 import type { ComponentType, ReactNode } from "react";
 import { memo, useMemo } from "react";
 import {
@@ -48,83 +48,48 @@ export interface StreamdownProps {
   style?: ViewProps["style"];
 }
 
-type TaroStyle = NonNullable<ViewProps["style"]>;
-type TaroObjectStyle = Extract<TaroStyle, object>;
-
-const rootStyle: TaroObjectStyle = {
-  width: "100%",
-};
-
 const defaultView = "view";
 const defaultText = "text";
 const defaultScrollView = "scroll-view";
 
-const paragraphStyle: TaroObjectStyle = {
-  marginBottom: 8,
-};
+const rootClassName = "taro-streamdown-root w-full";
+const paragraphClassName = "taro-streamdown-paragraph mb-2";
+const headingClassNames = {
+  1: "taro-streamdown-heading taro-streamdown-h1 mb-2 text-3xl font-semibold",
+  2: "taro-streamdown-heading taro-streamdown-h2 mb-2 text-2xl font-semibold",
+  3: "taro-streamdown-heading taro-streamdown-h3 mb-2 text-xl font-semibold",
+  4: "taro-streamdown-heading taro-streamdown-h4 mb-2 text-lg font-semibold",
+  5: "taro-streamdown-heading taro-streamdown-h5 mb-2 text-base font-semibold",
+  6: "taro-streamdown-heading taro-streamdown-h6 mb-2 text-sm font-semibold",
+} as const;
+const textClassName = "taro-streamdown-text";
+const strongClassName = "taro-streamdown-strong font-semibold";
+const emphasisClassName = "taro-streamdown-emphasis italic";
+const inlineCodeClassName =
+  "taro-streamdown-inline-code rounded px-1 font-mono";
+const tableContainerClassName = "taro-streamdown-table-container mb-2 w-full";
+const tableClassName = "taro-streamdown-table min-w-full";
+const tableHeaderRowClassName =
+  "taro-streamdown-table-header-row flex flex-row";
+const tableRowClassName = "taro-streamdown-table-row flex flex-row -mt-px";
+const tableCellBaseClassName =
+  "taro-streamdown-table-cell min-w-24 flex-1 border border-gray-300 px-2 py-1";
+const tableHeaderCellClassName = `taro-streamdown-table-header-cell ${tableCellBaseClassName} font-semibold`;
 
-const strongStyle: Extract<NonNullable<TextProps["style"]>, object> = {
-  fontWeight: "600",
-};
+const cn = (...classes: Array<string | false | null | undefined>) =>
+  classes.filter(Boolean).join(" ");
 
-const emphasisStyle: Extract<NonNullable<TextProps["style"]>, object> = {
-  fontStyle: "italic",
-};
-
-const inlineCodeStyle: Extract<NonNullable<TextProps["style"]>, object> = {
-  borderRadius: 4,
-  fontFamily: "monospace",
-  padding: "0 4px",
-};
-
-const tableContainerStyle: Extract<
-  NonNullable<ScrollViewProps["style"]>,
-  object
-> = {
-  marginBottom: 8,
-  width: "100%",
-};
-
-const tableStyle: TaroObjectStyle = {
-  minWidth: "100%",
-};
-
-const tableRowStyle: TaroObjectStyle = {
-  display: "flex",
-  flexDirection: "row",
-};
-
-const tableCellStyle: TaroObjectStyle = {
-  borderColor: "rgba(127, 127, 127, 0.35)",
-  borderStyle: "solid",
-  borderWidth: 1,
-  flex: 1,
-  minWidth: 96,
-  padding: "6px 8px",
-};
-
-const tableHeaderCellStyle: TaroObjectStyle = {
-  ...tableCellStyle,
-  fontWeight: "600",
-};
-
-const alignmentStyle = (alignment: TableAlignment): TaroObjectStyle => {
-  if (!alignment) {
-    return {};
+const alignmentClassName = (alignment: TableAlignment): string | undefined => {
+  if (alignment === "center") {
+    return "taro-streamdown-align-center text-center";
   }
-
-  return { textAlign: alignment };
-};
-
-const mergeStyle = (
-  base: TaroObjectStyle,
-  override: ViewProps["style"]
-): ViewProps["style"] => {
-  if (!override) {
-    return base;
+  if (alignment === "right") {
+    return "taro-streamdown-align-right text-right";
   }
-
-  return typeof override === "string" ? override : { ...base, ...override };
+  if (alignment === "left") {
+    return "taro-streamdown-align-left text-left";
+  }
+  return undefined;
 };
 
 export const Streamdown = memo(
@@ -147,7 +112,7 @@ export const Streamdown = memo(
     const Root = components?.root ?? defaultView;
 
     return (
-      <Root className={className} style={mergeStyle(rootStyle, style)}>
+      <Root className={cn(rootClassName, className)} style={style}>
         {blocks.map((block, index) =>
           renderBlock(block, `${index}`, components, selectable)
         )}
@@ -179,9 +144,12 @@ const renderBlock = (
   }
 
   const Paragraph = components?.paragraph ?? defaultView;
+  const blockClassName = block.headingLevel
+    ? headingClassNames[block.headingLevel]
+    : paragraphClassName;
 
   return (
-    <Paragraph key={key} style={paragraphStyle}>
+    <Paragraph className={blockClassName} key={key}>
       {renderInline(block.children, `${key}-text`, components, selectable)}
     </Paragraph>
   );
@@ -201,21 +169,22 @@ const renderTable = (
 
   return (
     <TableContainer
+      className={tableContainerClassName}
       key={key}
       scrollX
       showScrollbar={false}
-      style={tableContainerStyle}
     >
-      <Table style={tableStyle}>
-        <TableRow style={tableRowStyle}>
+      <Table className={tableClassName}>
+        <TableRow className={tableHeaderRowClassName}>
           {block.header.map((cell, cellIndex) => (
             <HeaderCell
+              className={cn(
+                tableHeaderCellClassName,
+                cellIndex > 0 && "-ml-px",
+                alignmentClassName(block.alignments[cellIndex])
+              )}
               // biome-ignore lint/suspicious/noArrayIndexKey: markdown table columns are positional and hold no local state
               key={`h-${cellIndex}`}
-              style={{
-                ...tableHeaderCellStyle,
-                ...alignmentStyle(block.alignments[cellIndex]),
-              }}
             >
               {renderInline(
                 cell,
@@ -228,18 +197,19 @@ const renderTable = (
         </TableRow>
         {block.rows.map((row, rowIndex) => (
           <TableRow
+            className={tableRowClassName}
             // biome-ignore lint/suspicious/noArrayIndexKey: markdown table rows are positional and hold no local state
             key={`r-${rowIndex}`}
-            style={tableRowStyle}
           >
             {row.map((cell, cellIndex) => (
               <Cell
+                className={cn(
+                  tableCellBaseClassName,
+                  cellIndex > 0 && "-ml-px",
+                  alignmentClassName(block.alignments[cellIndex])
+                )}
                 // biome-ignore lint/suspicious/noArrayIndexKey: markdown table cells are positional and hold no local state
                 key={`c-${cellIndex}`}
-                style={{
-                  ...tableCellStyle,
-                  ...alignmentStyle(block.alignments[cellIndex]),
-                }}
               >
                 {renderInline(
                   cell,
@@ -276,28 +246,33 @@ const renderInlineNode = (
 
   if (node.type === "text") {
     return (
-      <TextComponent key={key} selectable={selectable} userSelect={selectable}>
+      <TextComponent
+        className={textClassName}
+        key={key}
+        selectable={selectable}
+        userSelect={selectable}
+      >
         {node.value}
       </TextComponent>
     );
   }
 
   let Component = components?.inlineCode ?? defaultText;
-  let style = inlineCodeStyle;
+  let className = inlineCodeClassName;
 
   if (node.type === "strong") {
     Component = components?.strong ?? defaultText;
-    style = strongStyle;
+    className = strongClassName;
   } else if (node.type === "emphasis") {
     Component = components?.emphasis ?? defaultText;
-    style = emphasisStyle;
+    className = emphasisClassName;
   }
 
   return (
     <Component
+      className={className}
       key={key}
       selectable={selectable}
-      style={style}
       userSelect={selectable}
     >
       {renderInline(node.children, key, components, selectable)}

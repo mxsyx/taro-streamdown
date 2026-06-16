@@ -15,6 +15,21 @@ describe("parseMarkdown", () => {
     ]);
   });
 
+  it("keeps heading levels for text blocks", () => {
+    expect(parseMarkdown("# Title\n\n### Section")).toEqual([
+      {
+        type: "text",
+        headingLevel: 1,
+        children: [{ type: "text", value: "Title" }],
+      },
+      {
+        type: "text",
+        headingLevel: 3,
+        children: [{ type: "text", value: "Section" }],
+      },
+    ]);
+  });
+
   it("parses gfm-style tables", () => {
     expect(
       parseMarkdown(

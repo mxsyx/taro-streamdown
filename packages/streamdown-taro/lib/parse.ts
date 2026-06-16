@@ -10,6 +10,7 @@ export type InlineNode =
 
 export interface TextBlock {
   children: InlineNode[];
+  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
   type: "text";
 }
 
@@ -30,7 +31,7 @@ const INLINE_TOKEN_PATTERN =
 const LEADING_PIPE_PATTERN = /^\|/;
 const TRAILING_PIPE_PATTERN = /\|$/;
 const TABLE_DELIMITER_PATTERN = /^:?-{3,}:?$/;
-const HEADING_PATTERN = /^#{1,6}\s+(.+)$/;
+const HEADING_PATTERN = /^(#{1,6})\s+(.+)$/;
 const BLOCK_CACHE_LIMIT = 100;
 
 const blockCache = new Map<string, MarkdownBlock[]>();
@@ -58,22 +59,9 @@ export const parseMarkdown = (markdown = ""): MarkdownBlock[] => {
       continue;
     }
 
-    const paragraphLines: string[] = [];
-    while (index < lines.length && lines[index]?.trim() !== "") {
-      if (paragraphLines.length > 0 && parseTable(lines, index)) {
-        break;
-      }
-      paragraphLines.push(stripTextMarkers(lines[index] ?? ""));
-      index += 1;
-    }
-
-    const text = paragraphLines.join("\n").trim();
-    if (text) {
-      blocks.push({
-        type: "text",
-        children: parseInline(text),
-      });
-    }
+    const text = parseTextBlock(lines, index);
+    blocks.push(text.block);
+    index = text.nextIndex;
   }
 
   if (blockCache.size >= BLOCK_CACHE_LIMIT) {
@@ -85,6 +73,41 @@ export const parseMarkdown = (markdown = ""): MarkdownBlock[] => {
   blockCache.set(markdown, blocks);
 
   return blocks;
+};
+
+const parseTextBlock = (
+  lines: string[],
+  startIndex: number
+): { block: TextBlock; nextIndex: number } => {
+  const heading = parseHeading(lines[startIndex] ?? "");
+  if (heading) {
+    return {
+      block: {
+        type: "text",
+        headingLevel: heading.level,
+        children: parseInline(heading.text),
+      },
+      nextIndex: startIndex + 1,
+    };
+  }
+
+  const paragraphLines: string[] = [];
+  let index = startIndex;
+  while (index < lines.length && lines[index]?.trim() !== "") {
+    if (paragraphLines.length > 0 && parseTable(lines, index)) {
+      break;
+    }
+    paragraphLines.push(lines[index] ?? "");
+    index += 1;
+  }
+
+  return {
+    block: {
+      type: "text",
+      children: parseInline(paragraphLines.join("\n").trim()),
+    },
+    nextIndex: index,
+  };
 };
 
 export const parseInline = (value: string): InlineNode[] => {
@@ -237,14 +260,19 @@ const parseAlignment = (cell: string): TableAlignment => {
   return undefined;
 };
 
-const stripTextMarkers = (line: string): string => {
+const parseHeading = (
+  line: string
+): { level: 1 | 2 | 3 | 4 | 5 | 6; text: string } | null => {
   const trimmed = line.trim();
   const heading = trimmed.match(HEADING_PATTERN);
-  if (heading) {
-    return heading[1] ?? "";
+  if (!heading) {
+    return null;
   }
 
-  return line;
+  return {
+    level: heading[1]?.length as 1 | 2 | 3 | 4 | 5 | 6,
+    text: heading[2] ?? "",
+  };
 };
 
 const unescapeText = (value: string): string =>
