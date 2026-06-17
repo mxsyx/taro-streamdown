@@ -108,4 +108,18 @@ describe("parseInline", () => {
       { type: "inlineCode", children: [{ type: "text", value: "code" }] },
     ]);
   });
+
+  it("parses triple emphasis without leaking marker text", () => {
+    expect(parseInline("***一、玩偶适配分析***")).toEqual([
+      {
+        type: "strong",
+        children: [
+          {
+            type: "emphasis",
+            children: [{ type: "text", value: "一、玩偶适配分析" }],
+          },
+        ],
+      },
+    ]);
+  });
 });

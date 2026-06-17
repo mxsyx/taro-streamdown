@@ -34,7 +34,7 @@ export type MarkdownBlock = ListBlock | TextBlock | TableBlock;
 
 const NEWLINE_PATTERN = /\r\n?/g;
 const INLINE_TOKEN_PATTERN =
-  /(`+)([\s\S]*?)\1|(\*\*|__)([\s\S]+?)\3|(\*|_)([^\s*_][\s\S]*?[^\s*_]|\S)\5/g;
+  /(`+)([\s\S]*?)\1|(\*\*\*|___)([\s\S]+?)\3|(\*\*|__)([\s\S]+?)\5|(\*|_)([^\s*_][\s\S]*?[^\s*_]|\S)\7/g;
 const LEADING_PIPE_PATTERN = /^\|/;
 const TRAILING_PIPE_PATTERN = /\|$/;
 const TABLE_DELIMITER_PATTERN = /^:?-{3,}:?$/;
@@ -182,12 +182,22 @@ export const parseInline = (value: string): InlineNode[] => {
     } else if (match[3]) {
       nodes.push({
         type: "strong",
-        children: parseInline(match[4] ?? ""),
+        children: [
+          {
+            type: "emphasis",
+            children: parseInline(match[4] ?? ""),
+          },
+        ],
       });
     } else if (match[5]) {
       nodes.push({
-        type: "emphasis",
+        type: "strong",
         children: parseInline(match[6] ?? ""),
+      });
+    } else if (match[7]) {
+      nodes.push({
+        type: "emphasis",
+        children: parseInline(match[8] ?? ""),
       });
     }
 
