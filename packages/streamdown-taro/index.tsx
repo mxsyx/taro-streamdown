@@ -57,7 +57,7 @@ const defaultView = "view";
 const defaultText = "text";
 
 const rootClassName = "taro-streamdown-root w-full";
-const paragraphClassName = "taro-streamdown-paragraph mb-2";
+const paragraphClassName = "taro-streamdown-paragraph mb-2 [&:last-child]:mb-0";
 const headingClassNames = {
   1: "taro-streamdown-heading taro-streamdown-h1 mb-2 text-3xl font-semibold",
   2: "taro-streamdown-heading taro-streamdown-h2 mb-2 text-2xl font-semibold",
