@@ -37,7 +37,7 @@
   "description": "Taro-compatible Markdown renderer for Streamdown text and tables",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mxsyx/taro-posthog-sdk.git",
+    "url": "git+https://github.com/mxsyx/taro-streamdown.git",
     "directory": "packages/streamdown-taro"
   }
 }
